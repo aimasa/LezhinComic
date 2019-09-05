@@ -4,10 +4,10 @@ import random
 import os
 import json
 import gzip
-
+import zipfile
+import glob
 base_url = "https://cdn.lezhin.com/v2"
 
-base_dir = "H:/寻景镜头/32"
 my_headers = [
     "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36",
@@ -25,16 +25,20 @@ my_headers = [
 ]
 
 
-def download(scrollsInfo, lezhin_cookie, base_dir, series_id):
+def download(scrollsInfo, access_token, base_dir, series_id, comic_name, updatedAt):
     index = 1
+    headers = {
+        'Sec-Fetch-Mode': "no-cors",
+        'Referer': "https://www.lezhin.com/ko/comic/"+comic_name+"/"+series_id,
+        'User-Agent': random.choice(my_headers)
+    }
+
     for i in scrollsInfo:
-        url = base_url + i['path'] + "?access_token=7358890f-3291-404d-90e5-818c2eccf3c5&purchased=true&q=30&updated=1553482801895";
-        response = ulb.Request(url)
-        response.add_header('User-Agent', random.choice(my_headers))
-        response.add_header('cookie', lezhin_cookie)
+        url = base_url + i['path']+"?access_token="+access_token+"&purchased=true&q=30&updated="+str(updatedAt);
+        response = ulb.Request(url,headers=headers)
         print("第" +series_id + "话  " + "第" + str(index) + "张")
         file_name = base_dir + str(index) + ".jpg"
-        data = ulb.urlopen(response).read()
+        data =ulb.urlopen(response, timeout=10).read()
         fp = open(file_name, "wb")
         fp.write(data)
         fp.close()
@@ -50,6 +54,7 @@ def check_folder(comic_folder_name):
 
 def gain_comic_info_dic(comic_name, series_id, comic_id, lezhin_cookie):
     comic_info_base_url = "https://www.lezhin.com/api/v2/inventory_groups/comic_viewer_a"
+    referer = "https://www.lezhin.com/ko/comic/" + comic_name + "/" + series_id
 
     comic_info_entire_url = comic_info_base_url + "?platform=web&store=web&alias=" + comic_name + "&name=" + series_id + "&preload=true&type=comic_episode&_=" + comic_id
     headers = {'sec-fetch-mode': 'cors',
@@ -64,14 +69,13 @@ def gain_comic_info_dic(comic_name, series_id, comic_id, lezhin_cookie):
                'accept': 'application/json, text/javascript, */*; q=0.01',
                'authority': 'www.lezhin.com',
                'x-lz-country': 'jp',
-               'sec-fetch-site': 'same-origin'}
-    referer = "https://www.lezhin.com/ko/comic/" + comic_name + "/" + series_id
-    comic_info_request = ulb.Request(comic_info_entire_url, headers=headers)
-    comic_info_request.add_header('referer', referer)
-    comic_info_request.add_header('User-Agent', random.choice(my_headers))
-    comic_info_request.add_header('cookie', lezhin_cookie)
-    data = ulb.urlopen(comic_info_request,timeout=30).read()
+               'sec-fetch-site': 'same-origin',
+               'referer':referer,
+               'User-Agent': random.choice(my_headers),
+               'cookie': lezhin_cookie}
 
+    comic_info_request = ulb.Request(comic_info_entire_url, headers=headers)
+    data = ulb.urlopen(comic_info_request,timeout=60).read()
     dic_data = json.loads(gzip.decompress(data).decode('utf-8'))
     return dic_data
 
@@ -79,16 +83,30 @@ def gain_group_comic_url_and_picture_number(dic_data):
     data = dic_data['data']
     extra = data['extra']
     episode = extra['episode']
-    scroll = episode['scroll']
+    updatedAt = episode['updatedAt']
     scrollsInfo = episode['scrollsInfo']
-    return scroll,scrollsInfo
+    return updatedAt,scrollsInfo
 
-def gain_comic_and_download(comic_chinese_name, comic_name,series_id, comic_id, lezhin_cookie):
+def gain_comic_and_download(comic_chinese_name, comic_name,series_id, comic_id, lezhin_cookie, access_token, zip_type):
     comic_folder_name = "H:/"+ comic_chinese_name + series_id + "/"
     check_folder(comic_folder_name)
     dic_data = gain_comic_info_dic(comic_name, series_id, comic_id, lezhin_cookie)
-    scroll, scrollsInfo = gain_group_comic_url_and_picture_number(dic_data)
-    download(scrollsInfo, lezhin_cookie, comic_folder_name, series_id)
+    # 获取该漫画详细信息的json文件
+    updatedAt, scrollsInfo = gain_group_comic_url_and_picture_number(dic_data)
+    # 下载漫画当前话
+    download(scrollsInfo, access_token, comic_folder_name, series_id, comic_name, updatedAt)
+    # 压缩
+    comic_zip_path = "H:/"+ comic_chinese_name
+    check_folder(comic_zip_path)
+    comic_zip_name = comic_chinese_name + series_id + "." + zip_type
+    zip_path(comic_folder_name,comic_zip_path,comic_zip_name)
+
+def zip_path(comic_folder_path, comic_zip_path,comic_zip_name):
+    f = zipfile.ZipFile(comic_zip_path+'/'+comic_zip_name,'w',zipfile.ZIP_DEFLATED)
+    files = glob.glob(comic_folder_path + '/*')
+    for file in files:
+        f.write(file)
+    f.close()
 
 
 if __name__ == "__main__":
@@ -100,16 +118,19 @@ if __name__ == "__main__":
     #------------------------------------------------------
     # comic_chinese_name = "我的哥哥我的老师"
     # comic_name = "mybromyssam"
-    # series_id_first = 17
-    # series_id_last = 19
+    # series_id_first = 20
+    # series_id_last = 20
     # ------------------------------------------------------
     comic_chinese_name = "小姐与王老五"
     comic_name = "snail"
     series_id_first = 103
     series_id_last = 110
     # ------------------------------------------------------
-
+    zip_type = "zip"
+    access_token = "7358890f-3291-404d-90e5-818c2eccf3c5"
     comic_id = "1567605913204"
-    lezhin_cookie = "x-lz-locale=ko_KR; _ga=GA1.2.394601603.1567604555; _gid=GA1.2.1191437402.1567604555; cto_lwid=4ba946fd-332a-4bce-9dbf-581af43fcda0; _dg_t1_ses.99fc=*; _gcl_au=1.1.1760066550.1567604555; _fbp=fb.1.1567604555487.1110827021; JSESSIONID=4yr6QqKY36ojsiwKyNwhaQ; _BS_GUUID=ilxAIykH5ElUwlzyBsHYnD9uYTzN5mjnIQYqoj8t; _TRK_AUIDA_14106=0c24fc95a33400c7d0d55ea4d57c2080:1; _TRK_ASID_14106=1a02158c6bf8fcd151eaa31fef08c74a; REMEMBER=c2lqaW5yZW5jYW9AZ21haWwuY29tOjE1NzAxOTc3MjA0Mzk6MThjY2U1ZmJiYTgwYjc4N2I1M2U4ZTg2YmJkMDU1MWM; akaToken=ZXhwPTE1Njc2MDYxOTl+YWNsPSUyZnYyJTJmY29taWNzJTJmNjAyNzE0MDA3Nzg0NjUyOCUyZmVwaXNvZGVzJTJmNTg4MDQyMzc5MzY4ODU3NiUyZmNvbnRlbnRzJTJmKnB1cmNoYXNlZCUzZHRydWUqfmhtYWM9NGVjNjRiMGE3ZmRkODk1YTU3OGJmNmQyN2RhM2U0ZTNmNTM4MjYyZjFhYTAyYjUyZWZiNThiOTJiOTViZWRmOQ==; _dg_t1_id.99fc=67df5914-2c41-4ae7-803c-50b3beaa627d.1567604555.1.1567605899.1567604555.da526573-2c0a-48ae-9281-13740ba3885e; _gali=btn-yes; cc=mP-3DGkriVbLlhkRTGi9RkchsGJ1p_VUUetQL--YL70Xnu35MmOCR1tXkBo1VlmlQ0UPmttMujZRu46R-xTRROpyTu_06maQUUxvgE1h3SZDNsdYQUUi4HCbEeugW0xMY7z6KAGJryoehv8abmwiZe2QhFKOE2bVNtIBSrDenT3IocNwrNnQ7AWV6Ns4B7Pw; AWSALB=zdpL3E7hwRSkvXeqjF2EJq45+OOwZUljofB7tL4MGcnFGI9y3FmX5+klDZQQWs7hklmKmXhZGMWjb1Y9G6rI/jsN+fNu1DpwEI2I+yrdXpYvqJFSF08pOkZAS99G0PdTJZNHevZxhljkugBJmZFxjTv+fEVputZ2y2aYR+uf1Y1qKxKGslng/2+HPyxXLA==; RSESSION=L25vRklPWWJVdjdEOWVFMnQzZFNUQVh5aVRWb3ZFbVhiN3o3bUg2dWFYRllnWEd4cEFsOXNHSHhvZHBGSXo2M2x4WFJWZmoxV1kvSDZkZWFGQTFrUUNZVmpoWk16cG1GOXh2cUN4VUVFNTVIeGl2dGVERFk2NnI2OVFodVZxMVh3a1c1MkJrQkFNbkYwZFhGTkxYWmdUN0xPc1pJWm9PTUV0TkNOV0NvRm5xeWJMZ1FIb1FTNjd6YW9CSTI4R0hwS2VmZVBZOW1NeHRnOC8wOVBSd0dBdXl3OGNncXVEKzVkTVNOcjhuSHE5Vm1jWEdIcmpoRlJOcDA2N1F0OXp0MCtJOE51ZmtsVU54SWVwdXM0anNhK0s5cG9PUk41OFhUL1k5dkJPNGQvN2xCdXNqOWd4d2F0ZGtVZk44QlNWWTBVS0w5cVB1cmJuWDFkNGVVY3pDbXkvMDk5QjI0ZkVXSVUzYVBwTnZSbGU5M3puRUJpeC8ybm1USGZkV0E5cTA4LS0wSm5XUVlKMnVRb3pnYTNyVHpZa3lRPT0^%^3D--e1d3a8a7a01e8fe7c6b4ab4de23567a9bb3b4cc7"
+    lezhin_cookie = "x-lz-locale=en_US; akaToken=ZXhwPTE1Njc2NDk1NTV+YWNsPSUyZnYyJTJmY29taWNzJTJmNTAzMDY1MDYyNDczNzI4MCUyZmVwaXNvZGVzJTJmNDkxMTI0Mzg2NDk2NTEyMCUyZmNvbnRlbnRzJTJmKnB1cmNoYXNlZCUzZGZhbHNlKn5obWFjPTRjZThlMjM1MTA4ZmM0NWZiNTQ3NTI0ZGM1ZGY4ZWI0MmEzOTJjOTFjNmQzODIwZWFmMDYzZjhmODBhMzYyN2Q=; AWSALB=kzZcbQG3UudIUeE8Zj+w3Xd4mEBiCUM8LGldz/P7h2LDix4A4xpcMoH990en+aWwZw2azRKrMOZ5RmCRooEiRZsSiQQTHG+Mloc353LHp2lzChDLBWRfizvgCxsl"
     for series_id in range(series_id_first,series_id_last + 1):
-        gain_comic_and_download(comic_chinese_name, comic_name, str(series_id), comic_id, lezhin_cookie)
+        gain_comic_and_download(comic_chinese_name, comic_name,str(series_id), comic_id, lezhin_cookie, access_token,zip_type)
+
+

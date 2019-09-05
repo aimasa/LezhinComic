@@ -25,8 +25,8 @@ def zip_path(comic_folder_path, comic_zip_path,comic_zip_name):
     f.close()
 
 if __name__ == "__main__":
-    for i in range(100,103):
-        comic_folder_path = "H:/小姐与王老五"+str(i)
-        comic_zip_path = "H:/小姐与王老五"
-        comic_zip_name = "小姐与王老五"+str(i)+".zip"
+    for i in range(18,21):
+        comic_folder_path = "H:/我的哥哥我的老师"+str(i)
+        comic_zip_path = "H:/我的哥哥我的老师"
+        comic_zip_name = "我的哥哥我的老师"+str(i)+".zip"
         zip_path(comic_folder_path, comic_zip_path,comic_zip_name)

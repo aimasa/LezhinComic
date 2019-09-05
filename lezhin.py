@@ -6,6 +6,7 @@ import json
 import gzip
 import zipfile
 import glob
+
 base_url = "https://cdn.lezhin.com/v2"
 
 my_headers = [
@@ -29,16 +30,16 @@ def download(scrollsInfo, access_token, base_dir, series_id, comic_name, updated
     index = 1
     headers = {
         'Sec-Fetch-Mode': "no-cors",
-        'Referer': "https://www.lezhin.com/ko/comic/"+comic_name+"/"+series_id,
+        'Referer': "https://www.lezhin.com/ko/comic/" + comic_name + "/" + series_id,
         'User-Agent': random.choice(my_headers)
     }
 
     for i in scrollsInfo:
-        url = base_url + i['path']+"?access_token="+access_token+"&purchased=true&q=30&updated="+str(updatedAt);
-        response = ulb.Request(url,headers=headers)
-        print("第" +series_id + "话  " + "第" + str(index) + "张")
+        url = base_url + i['path'] + "?access_token=" + access_token + "&purchased=true&q=30&updated=" + str(updatedAt);
+        response = ulb.Request(url, headers=headers)
+        print("第" + series_id + "话  " + "第" + str(index) + "张")
         file_name = base_dir + str(index) + ".jpg"
-        data =ulb.urlopen(response, timeout=10).read()
+        data = ulb.urlopen(response, timeout=10).read()
         fp = open(file_name, "wb")
         fp.write(data)
         fp.close()
@@ -70,14 +71,15 @@ def gain_comic_info_dic(comic_name, series_id, comic_id, lezhin_cookie):
                'authority': 'www.lezhin.com',
                'x-lz-country': 'jp',
                'sec-fetch-site': 'same-origin',
-               'referer':referer,
+               'referer': referer,
                'User-Agent': random.choice(my_headers),
                'cookie': lezhin_cookie}
 
     comic_info_request = ulb.Request(comic_info_entire_url, headers=headers)
-    data = ulb.urlopen(comic_info_request,timeout=60).read()
+    data = ulb.urlopen(comic_info_request, timeout=30).read()
     dic_data = json.loads(gzip.decompress(data).decode('utf-8'))
     return dic_data
+
 
 def gain_group_comic_url_and_picture_number(dic_data):
     data = dic_data['data']
@@ -85,10 +87,12 @@ def gain_group_comic_url_and_picture_number(dic_data):
     episode = extra['episode']
     updatedAt = episode['updatedAt']
     scrollsInfo = episode['scrollsInfo']
-    return updatedAt,scrollsInfo
+    return updatedAt, scrollsInfo
 
-def gain_comic_and_download(comic_chinese_name, comic_name,series_id, comic_id, lezhin_cookie, access_token, zip_type):
-    comic_folder_name = "H:/"+ comic_chinese_name + series_id + "/"
+
+def gain_comic_to_download_and_zipfile(comic_chinese_name, comic_name, series_id, comic_id, lezhin_cookie, access_token, zip_type,
+                            folder_name_header):
+    comic_folder_name = folder_name_header + comic_chinese_name + "/" + comic_chinese_name + series_id + "/"
     check_folder(comic_folder_name)
     dic_data = gain_comic_info_dic(comic_name, series_id, comic_id, lezhin_cookie)
     # 获取该漫画详细信息的json文件
@@ -96,13 +100,14 @@ def gain_comic_and_download(comic_chinese_name, comic_name,series_id, comic_id, 
     # 下载漫画当前话
     download(scrollsInfo, access_token, comic_folder_name, series_id, comic_name, updatedAt)
     # 压缩
-    comic_zip_path = "H:/"+ comic_chinese_name
+    comic_zip_path = "H:/" + comic_chinese_name
     check_folder(comic_zip_path)
     comic_zip_name = comic_chinese_name + series_id + "." + zip_type
-    zip_path(comic_folder_name,comic_zip_path,comic_zip_name)
+    zip_path(comic_folder_name, comic_zip_path, comic_zip_name)
 
-def zip_path(comic_folder_path, comic_zip_path,comic_zip_name):
-    f = zipfile.ZipFile(comic_zip_path+'/'+comic_zip_name,'w',zipfile.ZIP_DEFLATED)
+
+def zip_path(comic_folder_path, comic_zip_path, comic_zip_name):
+    f = zipfile.ZipFile(comic_zip_path + '/' + comic_zip_name, 'w', zipfile.ZIP_DEFLATED)
     files = glob.glob(comic_folder_path + '/*')
     for file in files:
         f.write(file)
@@ -115,22 +120,22 @@ if __name__ == "__main__":
     # comic_name = "viewfinder"
     # series_id_first = 45
     # series_id_last = 46
-    #------------------------------------------------------
-    # comic_chinese_name = "我的哥哥我的老师"
-    # comic_name = "mybromyssam"
-    # series_id_first = 20
-    # series_id_last = 20
     # ------------------------------------------------------
-    comic_chinese_name = "小姐与王老五"
-    comic_name = "snail"
-    series_id_first = 103
-    series_id_last = 110
+    comic_chinese_name = "我的哥哥我的老师"
+    comic_name = "mybromyssam"
+    series_id_first = 21
+    series_id_last = 21
+    # ------------------------------------------------------
+    # comic_chinese_name = "小姐与王老五"
+    # comic_name = "snail"
+    # series_id_first = 103
+    # series_id_last = 110
     # ------------------------------------------------------
     zip_type = "zip"
     access_token = "7358890f-3291-404d-90e5-818c2eccf3c5"
     comic_id = "1567605913204"
+    folder_name_header = "H:/"
     lezhin_cookie = "x-lz-locale=en_US; akaToken=ZXhwPTE1Njc2NDk1NTV+YWNsPSUyZnYyJTJmY29taWNzJTJmNTAzMDY1MDYyNDczNzI4MCUyZmVwaXNvZGVzJTJmNDkxMTI0Mzg2NDk2NTEyMCUyZmNvbnRlbnRzJTJmKnB1cmNoYXNlZCUzZGZhbHNlKn5obWFjPTRjZThlMjM1MTA4ZmM0NWZiNTQ3NTI0ZGM1ZGY4ZWI0MmEzOTJjOTFjNmQzODIwZWFmMDYzZjhmODBhMzYyN2Q=; AWSALB=kzZcbQG3UudIUeE8Zj+w3Xd4mEBiCUM8LGldz/P7h2LDix4A4xpcMoH990en+aWwZw2azRKrMOZ5RmCRooEiRZsSiQQTHG+Mloc353LHp2lzChDLBWRfizvgCxsl"
-    for series_id in range(series_id_first,series_id_last + 1):
-        gain_comic_and_download(comic_chinese_name, comic_name,str(series_id), comic_id, lezhin_cookie, access_token,zip_type)
-
-
+    for series_id in range(series_id_first, series_id_last + 1):
+        gain_comic_to_download_and_zipfile(comic_chinese_name, comic_name, str(series_id), comic_id, lezhin_cookie, access_token,
+                                zip_type, folder_name_header)

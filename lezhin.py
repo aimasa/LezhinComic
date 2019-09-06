@@ -129,6 +129,7 @@ def run():
     for series_id in range(int(series_id_first), int(series_id_last) + 1):
         gain_comic_to_download_and_zipfile(comic_chinese_name, comic_name, str(series_id), comic_id, lezhin_cookie, access_token,
                                 zip_type, folder_name_header)
+        time.sleep(20)
 
 def read_config():
     config = ConfigParser()

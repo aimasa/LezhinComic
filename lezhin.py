@@ -6,6 +6,8 @@ import json
 import gzip
 import zipfile
 import glob
+import time
+from configparser import ConfigParser
 
 base_url = "https://cdn.lezhin.com/v2"
 
@@ -39,7 +41,7 @@ def download(scrollsInfo, access_token, base_dir, series_id, comic_name, updated
         response = ulb.Request(url, headers=headers)
         print("第" + series_id + "话  " + "第" + str(index) + "张")
         file_name = base_dir + str(index) + ".jpg"
-        data = ulb.urlopen(response, timeout=10).read()
+        data = ulb.urlopen(response, timeout=20).read()
         fp = open(file_name, "wb")
         fp.write(data)
         fp.close()
@@ -76,7 +78,7 @@ def gain_comic_info_dic(comic_name, series_id, comic_id, lezhin_cookie):
                'cookie': lezhin_cookie}
 
     comic_info_request = ulb.Request(comic_info_entire_url, headers=headers)
-    data = ulb.urlopen(comic_info_request, timeout=30).read()
+    data = ulb.urlopen(comic_info_request, timeout=60).read()
     dic_data = json.loads(gzip.decompress(data).decode('utf-8'))
     return dic_data
 
@@ -113,29 +115,50 @@ def zip_path(comic_folder_path, comic_zip_path, comic_zip_name):
         f.write(file)
     f.close()
 
+def run():
+    config = read_config()
+    comic_chinese_name = config['comic_info']['comic_chinese_name']
+    comic_name = config['comic_info']['comic_name']
+    series_id_first = config['comic_info']['series_id_first']
+    series_id_last = config['comic_info']['series_id_last']
+    comic_id = config['comic_request_info']['comic_id']
+    lezhin_cookie = config['comic_request_info']['lezhin_cookie']
+    access_token = config['comic_request_info']['access_token']
+    zip_type = config['folder_info']['zip_type']
+    folder_name_header = config['folder_info']['folder_name_header']
+    for series_id in range(int(series_id_first), int(series_id_last) + 1):
+        gain_comic_to_download_and_zipfile(comic_chinese_name, comic_name, str(series_id), comic_id, lezhin_cookie, access_token,
+                                zip_type, folder_name_header)
+
+def read_config():
+    config = ConfigParser()
+    config.read('comic_info.config',encoding='UTF-8')
+    return config
+
 
 if __name__ == "__main__":
+    run()
     # -----------------------------------------------------
     # comic_chinese_name = "寻景镜头"
     # comic_name = "viewfinder"
     # series_id_first = 45
     # series_id_last = 46
     # ------------------------------------------------------
-    comic_chinese_name = "我的哥哥我的老师"
-    comic_name = "mybromyssam"
-    series_id_first = 21
-    series_id_last = 21
+    # comic_chinese_name = "我的哥哥我的老师"
+    # comic_name = "mybromyssam"
+    # series_id_first = 21
+    # series_id_last = 21
     # ------------------------------------------------------
     # comic_chinese_name = "小姐与王老五"
     # comic_name = "snail"
-    # series_id_first = 103
+    # series_id_first = 104
     # series_id_last = 110
-    # ------------------------------------------------------
-    zip_type = "zip"
-    access_token = "7358890f-3291-404d-90e5-818c2eccf3c5"
-    comic_id = "1567605913204"
-    folder_name_header = "H:/"
-    lezhin_cookie = "x-lz-locale=en_US; akaToken=ZXhwPTE1Njc2NDk1NTV+YWNsPSUyZnYyJTJmY29taWNzJTJmNTAzMDY1MDYyNDczNzI4MCUyZmVwaXNvZGVzJTJmNDkxMTI0Mzg2NDk2NTEyMCUyZmNvbnRlbnRzJTJmKnB1cmNoYXNlZCUzZGZhbHNlKn5obWFjPTRjZThlMjM1MTA4ZmM0NWZiNTQ3NTI0ZGM1ZGY4ZWI0MmEzOTJjOTFjNmQzODIwZWFmMDYzZjhmODBhMzYyN2Q=; AWSALB=kzZcbQG3UudIUeE8Zj+w3Xd4mEBiCUM8LGldz/P7h2LDix4A4xpcMoH990en+aWwZw2azRKrMOZ5RmCRooEiRZsSiQQTHG+Mloc353LHp2lzChDLBWRfizvgCxsl"
-    for series_id in range(series_id_first, series_id_last + 1):
-        gain_comic_to_download_and_zipfile(comic_chinese_name, comic_name, str(series_id), comic_id, lezhin_cookie, access_token,
-                                zip_type, folder_name_header)
+    # # ------------------------------------------------------
+    # zip_type = "zip"
+    # access_token = "7358890f-3291-404d-90e5-818c2eccf3c5"
+    # comic_id = "1567605913204"
+    # folder_name_header = "H:/"
+    # lezhin_cookie = "x-lz-locale=en_US; akaToken=ZXhwPTE1Njc2NDk1NTV+YWNsPSUyZnYyJTJmY29taWNzJTJmNTAzMDY1MDYyNDczNzI4MCUyZmVwaXNvZGVzJTJmNDkxMTI0Mzg2NDk2NTEyMCUyZmNvbnRlbnRzJTJmKnB1cmNoYXNlZCUzZGZhbHNlKn5obWFjPTRjZThlMjM1MTA4ZmM0NWZiNTQ3NTI0ZGM1ZGY4ZWI0MmEzOTJjOTFjNmQzODIwZWFmMDYzZjhmODBhMzYyN2Q=; AWSALB=kzZcbQG3UudIUeE8Zj+w3Xd4mEBiCUM8LGldz/P7h2LDix4A4xpcMoH990en+aWwZw2azRKrMOZ5RmCRooEiRZsSiQQTHG+Mloc353LHp2lzChDLBWRfizvgCxsl"
+
+
+

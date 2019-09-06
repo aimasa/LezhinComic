@@ -23,7 +23,8 @@ def zip_path(comic_folder_path, comic_zip_path,comic_zip_name):
     for file in files:
         f.write(file)
     f.close()
-
+'''
+'''
 if __name__ == "__main__":
     for i in range(18,21):
         comic_folder_path = "H:/我的哥哥我的老师"+str(i)

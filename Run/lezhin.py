@@ -22,8 +22,9 @@ def run(config_url):
         get_comic.gain_comic_to_download_and_zipfile(comic_chinese_name, comic_name, str(series_id), comic_id, lezhin_cookie, access_token,
                                                      zip_type, folder_name_header)
         if str(series_id) == series_id_last:
-            logging.debug("下载完第%s章，休息 %s s",str(series_id),spare_time)
-            time.sleep(int(spare_time))
+            pass
+        logging.debug("下载完第%s章，休息 %s s",str(series_id),spare_time)
+        time.sleep(int(spare_time))
 
 if __name__ == "__main__":
     run("H:\comic_info.ini")

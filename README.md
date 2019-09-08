@@ -16,4 +16,5 @@ access_token：下载漫画时候的token
 folder_name_header：想定义的漫画文件夹存放头位置
 lezhin_cookie：调用lezhin对漫画信息详细描述接口需要cookie
 ```
+关于配置文件的详细说明，可以点此链接[进入](https://aimasa.github.io/2019/09/08/lezhincomic/)
 

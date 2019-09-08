@@ -1,7 +1,7 @@
-import check
-import log
-import deal_data
-import mock_request
+from BaseDealData import check, deal_data
+from RunInfo import log
+from ComicInfoDeal import mock_request
+
 logging = log.lezhin_log(__name__).get_log()
 def gain_comic_to_download_and_zipfile(comic_chinese_name, comic_name, series_id, comic_id, lezhin_cookie, access_token, zip_type,
                             folder_name_header):

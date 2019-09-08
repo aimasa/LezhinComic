@@ -1,8 +1,8 @@
 import zipfile
 import glob
 from configparser import ConfigParser
-import log
-from error import UseError
+from RunInfo import log
+from RunInfo.error import UseError
 print(__name__)
 logging = log.lezhin_log(__name__).get_log()
 def zip_to_folder(comic_folder_path, comic_zip_path, comic_zip_name):
@@ -28,3 +28,6 @@ def read_config(config_url):
         logging.error("读取配置文件出现错误信息 %s", e)
         raise UseError("读取配置文件错误，详情见log日志")
     return config
+
+def spare_time(config_url):
+   time = read_config(config_url)

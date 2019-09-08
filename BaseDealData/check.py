@@ -1,5 +1,5 @@
-import log
-from error import UseError
+from RunInfo import log
+from RunInfo.error import UseError
 import os
 logging = log.lezhin_log(__name__).get_log()
 
@@ -25,6 +25,18 @@ def check_data(data, data_name):
         if data:
             logging.debug("%s : %s 数据已传入", data_name, data)
             return data
+        else:
+            logging.error("%s 数据缺失", data_name)
+            raise UseError("数据缺失，详情见log日志")
+            pass
+    elif isinstance(data,int):
+        if data:
+            if data >= 0:
+                logging.debug("%s : %s 数据已传入", data_name, data)
+                return data
+            else:
+                logging.debug("%s : %s 数据传入不规范", data_name, data)
+                raise UseError("输入数据过小，详情请见log日志")
         else:
             logging.error("%s 数据缺失", data_name)
             raise UseError("数据缺失，详情见log日志")

@@ -1,9 +1,10 @@
 import random
 import urllib.request as ulb
-import check
+from BaseDealData import check
 import gzip
 import json
-import log
+from RunInfo import log
+
 base_url = "https://cdn.lezhin.com/v2"
 logging = log.lezhin_log(__name__).get_log()
 my_headers = [
@@ -38,7 +39,7 @@ def download(scrollsInfo, access_token, base_dir, series_id, comic_name, updated
         file_name = base_dir + str(index) + ".jpg"
         data = ulb.urlopen(response, timeout=20).read()
         fp = open(file_name, "wb")
-        fp.write(check.check_data(data,"lezhin的漫画文件"))
+        fp.write(check.check_data(data, "lezhin的漫画文件"))
         fp.close()
         index = index + 1
 
@@ -66,6 +67,6 @@ def gain_comic_info(comic_name, series_id, comic_id, lezhin_cookie):
 
     comic_info_request = ulb.Request(comic_info_entire_url, headers=headers)
     data = ulb.urlopen(comic_info_request, timeout=60).read()
-    check.check_data(data,"lezhin响应漫画信息的json文件")
+    check.check_data(data, "lezhin响应漫画信息的json文件")
     dic_data = json.loads(gzip.decompress(data).decode('utf-8'))
     return dic_data
